@@ -70,6 +70,64 @@ class NLPService {
             };
         }).sort((a, b) => b.score - a.score);
     }
+
+    async extractSkillsFromText(text) {
+        // Common technical skills keywords
+        const technicalSkills = [
+            'javascript', 'python', 'java', 'react', 'angular', 'node.js',
+            'mongodb', 'sql', 'aws', 'docker', 'kubernetes', 'machine learning',
+            // Add more skills as needed
+        ];
+
+        const tokens = this.preprocessText(text.toLowerCase());
+        return technicalSkills.filter(skill =>
+            tokens.includes(skill) || text.toLowerCase().includes(skill)
+        );
+    }
+
+    async extractExperience(text) {
+        // Basic experience extraction
+        const experiencePatterns = [
+            /(\d+)\s*(?:years?|yrs?)\s*(?:of)?\s*experience/gi,
+            /experience\s*:\s*(\d+)\s*(?:years?|yrs?)/gi
+        ];
+
+        let experience = [];
+        for (const pattern of experiencePatterns) {
+            const matches = text.matchAll(pattern);
+            for (const match of matches) {
+                experience.push(parseInt(match[1]));
+            }
+        }
+
+        return experience.length > 0 ? Math.max(...experience) : 0;
+    }
+
+    calculateJobMatch(job, resume) {
+        const skillsMatch = this.calculateSkillsMatch(job.skills, resume.parsedSkills);
+        const experienceMatch = this.calculateExperienceMatch(job.requirements, resume.experience);
+
+        // Weight different factors
+        const weights = {
+            skills: 0.6,
+            experience: 0.4
+        };
+
+        return (skillsMatch * weights.skills) + (experienceMatch * weights.experience);
+    }
+
+    calculateSkillsMatch(jobSkills, resumeSkills) {
+        const matchedSkills = jobSkills.filter(skill =>
+            resumeSkills.includes(skill.toLowerCase())
+        );
+        return matchedSkills.length / jobSkills.length;
+    }
+
+    calculateExperienceMatch(requiredExp, actualExp) {
+        if (!requiredExp) return 1;
+        if (!actualExp) return 0;
+        return actualExp >= requiredExp ? 1 : actualExp / requiredExp;
+    }
 }
 
 module.exports = new NLPService(); 
