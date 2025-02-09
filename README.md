@@ -1,25 +1,28 @@
 # AI Job Filter
 
-A smart job matching platform that uses AI to connect employers with suitable candidates and help job seekers find relevant positions based on their resumes.
+A smart job matching platform that uses NLP (Natural Language Processing) to connect employers with suitable candidates and help job seekers find relevant positions based on their resumes.
 
 ## Features
 
 - **For Employers:**
   - Post job listings
-  - Get AI-powered candidate recommendations
+  - Get AI-powered candidate recommendations using NLP matching
   - View matching candidate profiles
+  - Score-based candidate ranking
 
 - **For Job Seekers:**
   - Upload resumes
-  - Get AI-powered job recommendations
+  - Get NLP-powered job recommendations
   - Apply to matching positions
+  - Skills and experience matching
 
 ## Tech Stack
 
 - **Frontend:** Angular 17
 - **Backend:** Express.js
 - **Database:** MongoDB
-- **AI Integration:** OpenAI API for text analysis
+- **AI Integration:** Natural (NLP library for Node.js)
+- **Text Processing:** node-nlp for text analysis and matching
 
 ## Project Setup
 
@@ -27,8 +30,8 @@ A smart job matching platform that uses AI to connect employers with suitable ca
 2. Set up the frontend (Angular)
 3. Set up the backend (Express)
 4. Configure MongoDB
-5. Set up OpenAI API integration
+5. Set up NLP integration
 
 ## Getting Started
 
-Detailed setup instructions coming soon...
+### Backend Setup
