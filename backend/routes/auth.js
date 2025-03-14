@@ -4,42 +4,77 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // Use env variable in production
+// Helper function to generate token
+const generateToken = (user) => {
+    return jwt.sign(
+        {
+            userId: user._id,
+            role: user.role,
+            email: user.email
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: '24h',
+            algorithm: 'HS512' // Using a more secure algorithm
+        }
+    );
+};
 
 // Register new user
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, role, name, company } = req.body;
+        const { email, password, role, name } = req.body;
 
-        // Check if user exists
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ message: 'User already exists' });
+        // Input validation
+        if (!email || !password || !role) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide all required fields'
+            });
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
+        // Check if user exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists'
+            });
+        }
+
+        // Hash password with higher rounds for better security
+        const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Create user
-        user = new User({
+        const user = new User({
             email,
             password: hashedPassword,
             role,
-            name,
-            company
+            name
         });
 
         await user.save();
 
-        // Create token
-        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
-            expiresIn: '24h'
+        // Generate token
+        const token = generateToken(user);
+
+        // Remove password from response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(201).json({
+            success: true,
+            token,
+            user: userResponse
         });
 
-        res.status(201).json({ token, user: { id: user._id, email, role, name } });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred during registration'
+        });
     }
 });
 
@@ -48,26 +83,51 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Check user exists
-        const user = await User.findOne({ email });
+        // Input validation
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide both email and password'
+            });
+        }
+
+        // Find user
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
         // Verify password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
-        // Create token
-        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
-            expiresIn: '24h'
+        // Generate token
+        const token = generateToken(user);
+
+        // Remove password from response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.json({
+            success: true,
+            token,
+            user: userResponse
         });
 
-        res.json({ token, user: { id: user._id, email, role: user.role, name: user.name } });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred during login'
+        });
     }
 });
 
